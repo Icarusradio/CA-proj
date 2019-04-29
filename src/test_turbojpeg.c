@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <setjmp.h>
+#include <time.h>
  
 // #include "jpeg-utils.h"
 // #include "libjpeg/include/turbojpeg.h"
@@ -15,7 +16,7 @@
 
 struct JpegHeader
 {
-    int size;
+    long int size;
     int width;
     int height;
 };
@@ -80,7 +81,7 @@ int trgb2jpeg(unsigned char* rgb_buffer, int width, int height, int quality, uns
 }
 
 
-int read_dir_img (char path[])
+void read_dir_img (char path[])
 {
     DIR *dir;
     struct dirent *ptr;
@@ -144,7 +145,7 @@ int read_dir_img (char path[])
                 // THROW_UNIX("reading input file");
             }
             fclose(imgFile);  imgFile = NULL;
-            tjpeg2rgb(jpegBuf, jpegSize, imgArray[i]);
+            tjpeg2rgb(jpegBuf, jpegSize, imgArray[i], i);
             
         }
         else 
@@ -154,13 +155,36 @@ int read_dir_img (char path[])
     }
 
     closedir(dir);
-    return 1;
 }
+
+
+long int compress_img_array ()
+{
+    unsigned char *jpegBuf;
+    long int totalSize = 0;
+    for (int i = 0; i < NUM_IMG; i += 1)
+    {
+        trgb2jpeg(imgArray[i], imgHeaderArray[i].width, imgHeaderArray[i].height, 75, &jpegBuf, &(imgHeaderArray[i].size));
+        free (jpegBuf);
+        totalSize += imgHeaderArray[i].size;
+    }
+    return totalSize;
+}
+
 
 
 int main()
 {
     char cwd[128];
     getcwd(cwd,sizeof(cwd));
+    read_dir_img (cwd);
+    clock_t start = clock ();
+    for (int j = 0; j < 5; j++)
+    {
+        long int totalSize = compress_img_array ();
+    }
+    clock_t end = clock ();
+    double duration = (end - start) / 5;
+    printf ("Average duration for compressing %d images is %lf miliseconds.\n", NUM_IMG, duration);
 
 }
