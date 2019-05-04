@@ -43,3 +43,23 @@ Our result the bandwidth is around 150 Mbps.
 ### File transfer
 We use GNU/Linux's socket to do the file transferring. Details see `src/server.c` and `src/client.c`.  
 The transfer speed is around 110 Mbps.  
+
+### Install libjpeg-turbo
+The original disk image only has ~400 MB free space left. So the first step is to resize the disk image:
+```bash
+$ qemu-img resize vexpress64-openembedded_lamp-armv8-gcc-5.2_20170127-761.img +10G
+```
+This will add 10 GB free space to the disk.  
+Building [libjpeg-turbo](https://libjpeg-turbo.org/) requires [CMake](https://cmake.org/), so we install CMake first. Download the [source code](https://github.com/Kitware/CMake/releases/download/v3.14.3/cmake-3.14.3.tar.gz) and execute the following command:
+```bash
+$ ./bootstrap
+$ make
+$ sudo make install
+```
+Next, download the [source code](https://github.com/libjpeg-turbo/libjpeg-turbo/archive/2.0.2.tar.gz) of libjpeg-turbo then execute:
+```bash
+$ mkdir build && cd build
+$ cmake -G"Unix Makefiles" ..
+$ make
+$ sudo make install
+```
