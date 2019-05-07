@@ -1,0 +1,1 @@
+qemu-system-aarch64 -m 4096 -smp 2 -cpu cortex-a57 -nographic -machine virt -kernel Image -append 'root=/dev/vda2 rw rootwait mem=4096M console=ttyAMA0,38400n8' -netdev user,id=user0 -device virtio-net-device,netdev=user0  -device virtio-blk-device,drive=disk -drive if=none,id=disk,file=vexpress64-openembedded_lamp-armv8-gcc-5.2_20170127-761.img
