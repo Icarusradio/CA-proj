@@ -1,3 +1,4 @@
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <netdb.h>
@@ -11,14 +12,14 @@
 #include <unistd.h>
 
 #define BACKLOG 10
-#define MAX_LEN 1024
+#define BUFSIZE 8192
 
 static void
 usage ()
 {
   printf ("Usage:\n");
-  printf ("server FILENAME PORT\n");
-  printf ("FILENAME: file to send or receive.\n");
+  printf ("server DIRECTORY PORT\n");
+  printf ("DIRECTORY: directory to the image files.\n");
   printf ("PORT: port to accept or send file.\n");
 }
 
@@ -31,7 +32,16 @@ main (int agrc, const char **argv)
       return 1;
     }
 
-  int status;
+  // Change the current directory
+  int status = chdir (argv[1]);
+  if (status == -1)
+    goto error;
+
+  // Open the current directory
+  DIR *dir = opendir (".");
+  if (dir == NULL)
+    goto error;
+
   struct addrinfo hints;
   struct addrinfo *res;
   memset (&hints, 0, sizeof hints);
@@ -54,48 +64,52 @@ main (int agrc, const char **argv)
   if (status != 0)
     goto error;
 
-  status = listen(sockfd, BACKLOG);
+  status = listen (sockfd, BACKLOG);
   if (status != 0)
     goto error;
 
   struct sockaddr_storage their_addr;
   socklen_t addr_size = sizeof their_addr;
-  int new_fd = accept(sockfd, (struct sockaddr *) &their_addr, &addr_size);
+  int new_fd = accept (sockfd, (struct sockaddr *) &their_addr, &addr_size);
 
-  int i;
-  recv (new_fd, &i, sizeof i, MSG_EOR);
-  printf ("Connection established! %d\n", i);
+  recv (new_fd, &status, sizeof status, MSG_EOR);
+  printf ("Connection established! %d\n", status);
 
   // Calculate the time.
   struct timespec start, end;
   clock_gettime (CLOCK_MONOTONIC_RAW, &start);
 
-  char buf[MAX_LEN];
-  // mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
-  int filefd = open (argv[1], O_RDONLY);
-  if (filefd == -1)
-    goto error;
-
-  ssize_t bytes = read (filefd, buf, MAX_LEN);
-  while (bytes != 0)
+  struct dirent *imgFile = readdir (dir);
+  ssize_t jobSize = 0;
+  while (imgFile != NULL)
     {
-      send (new_fd, buf, bytes, MSG_EOR);
-      bytes = read (filefd, buf, MAX_LEN);
+      int filefd = open (dir->d_name, O_RDONLY);
+
+      // Transfer the file
+      ssize_t bytes = sendfile (new_fd, filefd, NULL, BUFSIZE);
+      while (bytes != 0)
+        {
+          jobSize += bytes;
+          bytes = sendfile (new_fd, filefd, NULL, BUFSIZE);
+        }
+
+      close (filefd);
+      imgFile = readdir (dir);
     }
+
+  recv (new_fd, &status, sizeof status, MSG_EOR);
+  printf ("Processing terminated! %d\n", status);
 
   clock_gettime(CLOCK_MONOTONIC_RAW, &end);
   time_t delta_s = end.tv_sec - start.tv_sec;
+  long delta_us = end.tv_nsec - start.tv_nsec;
+  long double delta = (long double) delta_s + (long double) delta_us / (long double) 1e9;
+  printf ("Time cost: %.2Lf seconds\n", delta);
 
-  struct stat file_stat;
-  stat (argv[1], &file_stat);
-  off_t size = file_stat.st_size;
-  printf ("File size: %ld bytes\n", size);
-  printf ("Time cost: %ld seconds\n", delta_s);
-  printf ("Speed: %.2Lf Mbps\n", (long double) size / (long double) delta_s * 8.0 / 1000000.0);
-
-  close (filefd);
   close (new_fd);
   close (sockfd);
+  freeaddrinfo (res);
+  closedir (dir);
 
   return 0;
 
