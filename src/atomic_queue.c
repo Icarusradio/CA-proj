@@ -43,8 +43,12 @@ struct list_elem *
 atomic_queue_pop (struct atomic_queue *queue)
 {
   assert (queue != NULL);
+  struct list_elem *elem;
   pthread_mutex_lock (&queue->mutex);
-  struct list_elem *elem = list_pop_front (&queue->queue);
+  if (list_empty (&queue->queue))
+    elem = NULL;
+  else
+    elem = list_pop_front (&queue->queue);
   pthread_mutex_unlock (&queue->mutex);
   return elem;
 }

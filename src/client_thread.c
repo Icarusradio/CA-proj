@@ -73,12 +73,11 @@ thread_decompress (void *aux UNUSED)
   tjhandle handle = tjInitDecompress ();
   int width, height, jpegSubsamp, jpegColorspace;
   unsigned char *raw = malloc (MAXRAW);
-  bool empty = atomic_queue_empty (&queue);
-  while (transmit || !empty)
+  struct list_elem *e = atomic_queue_pop (&queue);
+  while (transmit || e != NULL)
     {
-      if (!empty)
+      if (e != NULL)
         {
-          struct list_elem *e = atomic_queue_pop (&queue);
           struct job_elem *job = list_entry (e, struct job_elem, elem);
 
           // Get the header info
@@ -100,7 +99,7 @@ thread_decompress (void *aux UNUSED)
           free (job->buf);
           free (job);
         }
-      empty = atomic_queue_empty (&queue);
+      e = atomic_queue_pop (&queue);
     }
   free (raw);
   tjDestroy (handle);
@@ -205,7 +204,7 @@ main (int agrc, char **argv)
       status = retrieve (new_fd, job->buf, fileSize);
       jobSize += fileSize;
       job->fileSize = fileSize;
-      snprintf (job->fullName, 300, "%s/%d.jpg", directory, fileNum);
+      snprintf (job->fullName, 300, "%s/%d.raw", directory, fileNum);
       fileNum++;
 
       atomic_queue_push (&queue, &job->elem);

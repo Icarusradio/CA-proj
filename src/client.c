@@ -141,7 +141,7 @@ main (int agrc, const char **argv)
       tjDecompress2 (handle, buf, fileSize, raw, width, 0, height, TJPF_RGB, 0);
 
       // Write the RGB file
-      snprintf (fullName, 300, "%s/%d.jpg", directory, fileNum);
+      snprintf (fullName, 300, "%s/%d.raw", directory, fileNum);
       mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
       int outfd = open (fullName, O_WRONLY | O_CREAT | O_TRUNC, mode);
       write (outfd, raw, width * height * tjPixelSize[TJPF_RGB]);
