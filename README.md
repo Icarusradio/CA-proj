@@ -41,7 +41,7 @@ $ iperf3 -c 10.0.2.2
 Our result the bandwidth is around 150 Mbps.
 
 ### File transfer
-We use GNU/Linux's socket to do the file transferring. Details see `src/server.c` and `src/client.c`.  
+We use GNU/Linux's socket to do the file transferring. Details see [`src/server.c`](https://github.com/Icarusradio/CA-proj/blob/17b44cc090fc5d79c153c177ddbf2e463c2ddeb3/src/server.c) and [`src/client.c`](https://github.com/Icarusradio/CA-proj/blob/17b44cc090fc5d79c153c177ddbf2e463c2ddeb3/src/client.c).  
 The transfer speed is around 110 Mbps.  
 
 ### Resize the image
